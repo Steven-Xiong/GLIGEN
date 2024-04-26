@@ -466,9 +466,9 @@ if __name__ == "__main__":
 
     meta_list = [ 
 
-        # - - - - - - - - GLIGEN on text grounding for generation - - - - - - - - # 
+        # # - - - - - - - - GLIGEN on text grounding for generation - - - - - - - - # 
         dict(
-            ckpt = "../gligen_checkpoints/checkpoint_generation_text.pth",
+            ckpt = "./gligen_checkpoints/checkpoint_generation_text.bin",
             prompt = "a teddy bear sitting next to a bird",
             phrases = ['a teddy bear', 'a bird'],
             locations = [ [0.0,0.09,0.33,0.76], [0.55,0.11,1.0,0.8] ],
@@ -503,7 +503,7 @@ if __name__ == "__main__":
 
         # - - - - - - - - GLIGEN on text and style grounding for generation - - - - - - - - # 
         dict(
-            ckpt = "../gligen_checkpoints/checkpoint_generation_text_image.pth",
+            ckpt = "../gligen_checkpoints/checkpoint_generation_text_image.bin",
             prompt = "a brick house in the woods, anime, oil painting",
             phrases =   ['a brick house',            'placehoder'],
             images =    ['inference_images/placeholder.png', 'inference_images/style_golden.jpg'],

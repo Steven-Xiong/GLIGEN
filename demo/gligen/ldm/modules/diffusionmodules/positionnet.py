@@ -33,7 +33,7 @@ class PositionNet(nn.Module):
 
         # embedding position (it may includes padding as placeholder)
         xyxy_embedding = self.fourier_embedder(boxes) # B*N*4 --> B*N*C
-
+        import pdb; pdb.set_trace()
         # learnable null embedding 
         positive_null = self.null_positive_feature.view(1,1,-1)
         xyxy_null =  self.null_position_feature.view(1,1,-1)

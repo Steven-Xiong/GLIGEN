@@ -43,9 +43,9 @@ class PositionNet(nn.Module):
         masks = masks.unsqueeze(-1) # B*N*1 
         text_masks = text_masks.unsqueeze(-1) # B*N*1 
         image_masks = image_masks.unsqueeze(-1) # B*N*1
-        
+        import pdb; pdb.set_trace()
         # embedding position (it may includes padding as placeholder)
-        xyxy_embedding = self.fourier_embedder(boxes) # B*N*4 --> B*N*C
+        xyxy_embedding = self.fourier_embedder(boxes) # B*N*4 --> B*N*C 对bbox的fourier embedding?
 
         # learnable null embedding 
         text_null  = self.null_text_feature.view(1,1,-1) # 1*1*C
@@ -54,12 +54,12 @@ class PositionNet(nn.Module):
 
         # replace padding with learnable null embedding 
         text_embeddings  = text_embeddings*text_masks  + (1-text_masks)*text_null
-        image_embeddings = image_embeddings*image_masks + (1-image_masks)*image_null
+        image_embeddings = image_embeddings*image_masks + (1-image_masks)*image_null   # image embedding
         xyxy_embedding = xyxy_embedding*masks + (1-masks)*xyxy_null
 
         objs_text  = self.linears_text(  torch.cat([text_embeddings, xyxy_embedding], dim=-1)  )
-        objs_image = self.linears_image( torch.cat([image_embeddings,xyxy_embedding], dim=-1)  )
-        objs = torch.cat( [objs_text,objs_image], dim=1 )
+        objs_image = self.linears_image( torch.cat([image_embeddings,xyxy_embedding], dim=-1)  ) # combine with layout embedding
+        objs = torch.cat( [objs_text,objs_image], dim=1 )  
 
         assert objs.shape == torch.Size([B,N*2,self.out_dim])        
         return objs

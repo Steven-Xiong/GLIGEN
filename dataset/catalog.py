@@ -21,7 +21,7 @@ class DatasetCatalog:
         self.FlickrGrounding = {
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params":dict(
-                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv/train-00.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv/train-0000.tsv'),
             ),
         }
 

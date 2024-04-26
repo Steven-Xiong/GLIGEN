@@ -16,6 +16,7 @@ class PLMSSampler(object):
         self.schedule = schedule
         self.alpha_generator_func = alpha_generator_func
         self.set_alpha_scale = set_alpha_scale
+        import pdb; pdb.set_trace()
 
     def register_buffer(self, name, attr):
         if type(attr) == torch.Tensor:
@@ -64,7 +65,7 @@ class PLMSSampler(object):
 
     @torch.no_grad()
     def plms_sampling(self, shape, input, uc=None, guidance_scale=1, mask=None, x0=None):
-
+        import pdb; pdb.set_trace()
         b = shape[0]
         
         img = input["x"]
@@ -115,6 +116,7 @@ class PLMSSampler(object):
 
         def get_model_output(input):
             e_t = self.model(input) 
+            import pdb; pdb.set_trace()
             if uc is not None and guidance_scale != 1:
                 unconditional_input = dict(x=input["x"], timesteps=input["timesteps"], context=uc, inpainting_extra_input=input["inpainting_extra_input"], grounding_extra_input=input['grounding_extra_input'])
                 e_t_uncond = self.model( unconditional_input ) 

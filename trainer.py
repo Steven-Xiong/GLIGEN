@@ -183,7 +183,7 @@ class Trainer:
         self.text_encoder = instantiate_from_config(config.text_encoder).to(self.device)
         self.diffusion = instantiate_from_config(config.diffusion).to(self.device)
 
-        
+        # import pdb; pdb.set_trace()
         state_dict = read_official_ckpt(  os.path.join(config.DATA_ROOT, config.official_ckpt_name)   )
         
         # modify the input conv for SD if necessary (grounding as unet input; inpaint)
@@ -217,6 +217,7 @@ class Trainer:
         params = []
         trainable_names = []
         all_params_name = []
+        # import pdb; pdb.set_trace()
         for name, p in self.model.named_parameters():
             if ("transformer_blocks" in name) and ("fuser" in name):
                 # New added Attention layers 
@@ -272,6 +273,8 @@ class Trainer:
         # = = = = = = = = = = = = = = = = = = = = create data = = = = = = = = = = = = = = = = = = = = #  
         train_dataset_repeats = config.train_dataset_repeats if 'train_dataset_repeats' in config else None
         dataset_train = ConCatDataset(config.train_dataset_names, config.DATA_ROOT, train=True, repeats=train_dataset_repeats)
+        # dataset_train.getitem(1)
+        # import pdb; pdb.set_trace()
         sampler = DistributedSampler(dataset_train, seed=config.seed) if config.distributed else None 
         loader_train = DataLoader( dataset_train,  batch_size=config.batch_size, 
                                                    shuffle=(sampler is None),
@@ -326,14 +329,14 @@ class Trainer:
 
 
     @torch.no_grad()
-    def get_input(self, batch):
-
+    def get_input(self, batch):     #这里比较关键
+        # import pdb; pdb.set_trace()
         z = self.autoencoder.encode( batch["image"] )
 
         context = self.text_encoder.encode( batch["caption"]  )
 
         _t = torch.rand(z.shape[0]).to(z.device)
-        t = (torch.pow(_t, 1) * 1000).long()
+        t = (torch.pow(_t, 1) * 1000).long()  # e.p: [306, 547]
         t = torch.where(t!=1000, t, 999) # if 1000, then replace it with 999
         
         inpainting_extra_input = None
@@ -347,15 +350,15 @@ class Trainer:
         if self.grounding_downsampler_input != None:
             grounding_extra_input = self.grounding_downsampler_input.prepare(batch)
 
-        return z, t, context, inpainting_extra_input, grounding_extra_input 
+        return z, t, context, inpainting_extra_input, grounding_extra_input  #后2个都是空
 
 
     def run_one_step(self, batch):
         x_start, t, context, inpainting_extra_input, grounding_extra_input = self.get_input(batch)
         noise = torch.randn_like(x_start)
         x_noisy = self.diffusion.q_sample(x_start=x_start, t=t, noise=noise)
-
-        grounding_input = self.grounding_tokenizer_input.prepare(batch)
+        # import pdb; pdb.set_trace()
+        grounding_input = self.grounding_tokenizer_input.prepare(batch)  # keys: 'boxes', 'masks', 'text_masks', 'image_masks', 'text_embeddings', 'image_embeddings'
         input = dict(x=x_noisy, 
                     timesteps=t, 
                     context=context, 

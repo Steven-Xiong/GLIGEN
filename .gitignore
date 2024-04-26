@@ -85,3 +85,11 @@ target/
 lib/pycocotools/_mask.c
 lib/nms/cpu_nms.c
 
+diffusers
+DATA
+OUTPUT
+gligen_checkpoints
+pretrained
+color150.mat
+SD_input_conv_weight_bias.pth
+projection_matrix

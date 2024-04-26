@@ -99,7 +99,7 @@ class DDIMSampler(object):
                 img_orig = self.diffusion.q_sample( x0, input["timesteps"] ) 
                 img = img_orig * mask + (1. - mask) * img
                 input["x"] = img
-            
+            import pdb; pdb.set_trace()
             img, pred_x0 = self.p_sample_ddim(input, index=index, uc=uc, guidance_scale=guidance_scale)
             input["x"] = img 
 
@@ -111,6 +111,7 @@ class DDIMSampler(object):
 
 
         e_t = self.model(input) 
+        import pdb; pdb.set_trace()
         if uc is not None and guidance_scale != 1:
             unconditional_input = dict(x=input["x"], timesteps=input["timesteps"], context=uc, inpainting_extra_input=input["inpainting_extra_input"], grounding_extra_input=input['grounding_extra_input'])
             e_t_uncond = self.model( unconditional_input ) 

@@ -268,15 +268,17 @@ def merge(merge_in_folder, merge_out_folder):
     files = os.listdir(merge_in_folder)
     N = len(files)
 
-    lineidx_files = files[0:N//2]
-    tsv_files = files[N//2:N]
+    # lineidx_files = files[0:N//2]
+    # tsv_files = files[N//2:N]
+    lineidx_files = sorted([f for f in files if f.endswith('lineidx')])
+    tsv_files = sorted([f for f in files if f.endswith('tsv')])
 
 
     if os.path.isdir(merge_out_folder):
         import shutil
         shutil.rmtree(merge_out_folder)
     os.makedirs(merge_out_folder, exist_ok=True)
-    writer = TSVWriter( os.path.join(merge_out_folder,'train-00.tsv') )
+    writer = TSVWriter( os.path.join(merge_out_folder,'all.tsv') )
 
 
     for tsv_file, lineidx_file in tqdm(zip(tsv_files, lineidx_files)):

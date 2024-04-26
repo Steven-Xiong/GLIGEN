@@ -375,7 +375,7 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             zero_module(conv_nd(dims, model_channels, out_channels, 3, padding=1)),
         )
-
+        # import pdb; pdb.set_trace()
         if self.is_style:
             from .positionnet_with_image  import PositionNet
         else:
@@ -398,7 +398,7 @@ class UNetModel(nn.Module):
             text_embeddings = th.zeros(batch, self.max_box, self.positive_len).type(dtype).to(device) 
         if self.training and random.random() < 0.1: # random drop for guidance  
             boxes, masks, text_embeddings = boxes*0, masks*0, text_embeddings*0
-  
+        import pdb; pdb.set_trace()
         objs = self.position_net( boxes, masks, text_embeddings ) # B*N*C 
 
         return objs
@@ -435,7 +435,7 @@ class UNetModel(nn.Module):
             image_masks = image_masks*0
             text_embeddings = text_embeddings*0
             image_embeddings = image_embeddings*0
-  
+        import pdb; pdb.set_trace()
         objs = self.position_net( boxes, masks, text_masks, image_masks, text_embeddings, image_embeddings ) # B*N*C 
         
         return objs
@@ -445,7 +445,7 @@ class UNetModel(nn.Module):
 
 
     def forward(self, input):
-
+        import pdb; pdb.set_trace()
         if self.is_style:
             objs = self.forward_position_net_with_image(input)
         else:

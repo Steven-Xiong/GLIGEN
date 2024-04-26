@@ -187,7 +187,7 @@ class TSVDataset(BaseDataset):
         assert which_layer_text in ['before','after']
         assert which_layer_image in ['after', 'after_renorm', 'after_reproject']
         assert random_drop_embedding in ['none', 'both', 'image']
-
+        # import pdb; pdb.set_trace()
 
         # Last linear layer used in CLIP text encoder. Here we use it to map CLIP image embedding into penultimate text space. See Appendix in paper. 
         self.projection_matrix = torch.load('projection_matrix')
@@ -224,6 +224,7 @@ class TSVDataset(BaseDataset):
 
 
     def __getitem__(self, index):
+        
         if self.max_boxes_per_data > 99:
             assert False, "Are you sure setting such large number of boxes per image?"
 
@@ -236,12 +237,12 @@ class TSVDataset(BaseDataset):
         out['id'] = raw_item['data_id']
         image = raw_item['image']
         image_tensor, trans_info = self.transform_image(image)
-        out["image"] = image_tensor
+        out["image"] = image_tensor  #[3,512,512]
 
 
 
         # -------------------- grounding token ------------------- # 
-        annos = raw_item['annos']
+        annos = raw_item['annos']  # len: 7
         
         areas = []
         all_boxes = []
@@ -257,7 +258,8 @@ class TSVDataset(BaseDataset):
         for anno in annos:
             x, y, w, h = anno['bbox']
             valid, (x0, y0, x1, y1) = recalculate_box_and_verify_if_valid(x, y, w, h, trans_info, self.image_size, self.min_box_size)
-
+            # anno.keys(): 'category_id', 'id', 'bbox', 'tokens_positive', 'data_id', 
+            # 'text_embedding_before', 'text_embedding_after', 'image_embedding_before', 'image_embedding_after'
             if valid:
                 areas.append(  (x1-x0)*(y1-y0)  )
                 all_boxes.append( torch.tensor([x0,y0,x1,y1]) / self.image_size ) # scale to 0-1
@@ -271,7 +273,7 @@ class TSVDataset(BaseDataset):
         wanted_idxs = torch.tensor(areas).sort(descending=True)[1]
         wanted_idxs = wanted_idxs[0:self.max_boxes_per_data]
 
-        boxes = torch.zeros(self.max_boxes_per_data, 4)
+        boxes = torch.zeros(self.max_boxes_per_data, 4)  # [30,4]
         masks = torch.zeros(self.max_boxes_per_data)
         text_embeddings =  torch.zeros(self.max_boxes_per_data, self.embedding_len)
         image_embeddings = torch.zeros(self.max_boxes_per_data, self.embedding_len)
@@ -296,11 +298,11 @@ class TSVDataset(BaseDataset):
         out["masks"] = masks # indicating how many valid objects for this image-text data
         out["image_masks"] = image_masks # indicating how many objects still there after random dropping applied
         out["text_masks"] = text_masks # indicating how many objects still there after random dropping applied
-        out["text_embeddings"] =  text_embeddings  
-        out["image_embeddings"] = image_embeddings      
+        out["text_embeddings"] =  text_embeddings    # [30,768]
+        out["image_embeddings"] = image_embeddings   # [30,768]   
         
 
-
+        # import pdb; pdb.set_trace()
         # -------------------- caption ------------------- # 
         if random.uniform(0, 1) < self.prob_use_caption:
             if is_det:

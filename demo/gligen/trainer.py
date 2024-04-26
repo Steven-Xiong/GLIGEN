@@ -302,9 +302,9 @@ class Trainer:
         z = self.autoencoder.encode( batch["image"] )
 
         context = self.text_encoder.encode( batch["caption"]  )
-
+        import pdb; pdb.set_trace()
         _t = torch.rand(z.shape[0]).to(z.device)
-        t = (torch.pow(_t, self.config.resample_step_gamma) * 1000).long()
+        t = (torch.pow(_t, self.config.resample_step_gamma) * 1000).long()  #这块不一样，对应论文里面的inference
         t = torch.where(t!=1000, t, 999) # if 1000, then replace it with 999
         
         return z, t, context 

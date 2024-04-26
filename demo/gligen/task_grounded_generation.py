@@ -20,7 +20,7 @@ import random
 
 device = default_device()
 
-
+#这块是新加入的
 def alpha_generator(length, type=[1,0,0]):
     """
     length is total timestpes needed for sampling. 
@@ -147,7 +147,7 @@ def fire_clip(text_encoder, meta, batch=1, max_objs=30, clip_model=None):
         model = clip_model['model']
         processor = clip_model['processor']
 
-    boxes = torch.zeros(max_objs, 4)
+    boxes = torch.zeros(max_objs, 4)     # n个bbox坐标
     masks = torch.zeros(max_objs)
     text_embeddings = torch.zeros(max_objs, 768)
     image_embeddings = torch.zeros(max_objs, 768)
@@ -169,7 +169,7 @@ def fire_clip(text_encoder, meta, batch=1, max_objs=30, clip_model=None):
             text_embeddings[idx] = text_feature
             image_embeddings[idx] = image_feature
     
-    
+    # import pdb; pdb.set_trace()
     out = {
         "boxes" : boxes.unsqueeze(0).repeat(batch,1,1),
         "masks" : masks.unsqueeze(0).repeat(batch,1),
@@ -183,7 +183,7 @@ def fire_clip(text_encoder, meta, batch=1, max_objs=30, clip_model=None):
 
 
 
-
+# this is the core grounding code?
 @torch.no_grad()
 def grounded_generation_box(loaded_model_list, instruction, *args, **kwargs):
     
@@ -234,6 +234,7 @@ def grounded_generation_box(loaded_model_list, instruction, *args, **kwargs):
 
 
     # ------------- prepare sampler ------------- #
+    # import pdb; pdb.set_trace()
     alpha_generator_func = partial(alpha_generator, type=instruction["alpha_type"])
     if False:
         sampler = DDIMSampler(diffusion, model, alpha_generator_func=alpha_generator_func, set_alpha_scale=set_alpha_scale)

@@ -234,7 +234,7 @@ class GatedSelfAttentionDense(nn.Module):
 
 
     def forward(self, x, objs):
-
+        # import pdb; pdb.set_trace()
         N_visual = x.shape[1]
         objs = self.linear(objs)
 

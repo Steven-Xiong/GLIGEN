@@ -136,14 +136,6 @@ class GroundedTextImageDataset_Detection(Base):
 
     def __len__(self):
         return len(self.annotations)
-	
-
-
-
-
-
-
-
 
 
 class GroundedTextImageDataset_Grounding(Base):
@@ -168,7 +160,7 @@ class GroundedTextImageDataset_Grounding(Base):
         anno = self.annotations[index]
         anno_id = anno["id"]
         X,Y,W,H = anno['bbox']
-
+        # import pdb; pdb.set_trace()
         caption = self.data[ anno["image_id"]  ]["caption"]
         file_name = self.data[ anno["image_id"]  ]["file_name"]
         image = self.fetch_image(file_name)
@@ -243,9 +235,6 @@ def fire_clip_before_after(loader, folder):
             torch.save(image_after.clone().cpu(), save_name)
 
 
-
-
-
 @torch.no_grad()
 def fire_clip_after(loader, folder):
 
@@ -281,13 +270,13 @@ def fire_clip_after(loader, folder):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--is_o365", type=bool, default=False)
+    parser.add_argument("--is_o365", type=bool, default=True)
     parser.add_argument("--only_after", type=bool, default=False, help='if false, then both before and after projection CLIP feature will be saved')
     parser.add_argument("--chunk_idx", type=int, default=None)
     parser.add_argument("--total_chunk", type=int, default=None)
-    parser.add_argument("--json_path", type=str,  default="../../DATA/LAION-HAOTIAN-DOWNLOAD-TEST/laion_1142.json", help="")
-    parser.add_argument("--image_root", type=str,  default="../../DATA/LAION-HAOTIAN-DOWNLOAD-TEST/", help="")
-    parser.add_argument("--folder", type=str,  default="out", help="")
+    parser.add_argument("--json_path", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/annotations/instances_train2017.json", help="")
+    parser.add_argument("--image_root", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/images/train2017/", help="")
+    parser.add_argument("--folder", type=str,  default="GROUNDING/coco_embeddings_train", help="")
     args = parser.parse_args()
 
 
@@ -299,6 +288,7 @@ if __name__ == "__main__":
         dataset = GroundedTextImageDataset_Detection(args.json_path, args.image_root, args.chunk_idx, args.total_chunk)
     else:
         dataset = GroundedTextImageDataset_Grounding(args.json_path, args.image_root, args.chunk_idx, args.total_chunk)
+    # dataset.getitem(2)
     loader = DataLoader(dataset, batch_size=16, shuffle=False, num_workers=4, drop_last=False)
     os.makedirs(args.folder, exist_ok=True)
 

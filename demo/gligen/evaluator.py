@@ -31,7 +31,7 @@ def draw_masks_from_boxes(boxes,size):
     return torch.stack(image_masks).unsqueeze(1)
         
 
-
+# 对应gated attention的alpha scale
 def set_alpha_scale(model, alpha_scale):
     from ldm.modules.attention import GatedCrossAttentionDense, GatedSelfAttentionDense
     for module in model.modules():

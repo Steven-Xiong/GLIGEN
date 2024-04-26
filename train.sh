@@ -1,0 +1,2 @@
+# python main.py --name=COCO  --yaml_file=/project/osprey/scratch/x.zhexiao/GLIGEN/configs/coco2017K.yaml
+python main.py --name=flcker  --yaml_file=/project/osprey/scratch/x.zhexiao/GLIGEN/configs/flickr_text_image.yaml

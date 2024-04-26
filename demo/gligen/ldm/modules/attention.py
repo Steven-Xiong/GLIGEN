@@ -304,7 +304,7 @@ class GatedSelfAttentionDense(nn.Module):
 
 
     def forward(self, x, objs):
-
+        import pdb; pdb.set_trace()
         N_visual = x.shape[1]
         objs = self.linear(objs)
         
@@ -324,7 +324,7 @@ class BasicTransformerBlock(nn.Module):
         self.norm2 = nn.LayerNorm(query_dim)
         self.norm3 = nn.LayerNorm(query_dim)
         self.use_checkpoint = use_checkpoint
-
+        # import pdb; pdb.set_trace()
         if fuser_type == "gatedSA":
             # note key_dim here actually is context_dim
             self.fuser = GatedSelfAttentionDense(query_dim, key_dim, n_heads, d_head) 

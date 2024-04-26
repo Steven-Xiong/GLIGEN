@@ -18,7 +18,7 @@ import numpy as np
 import time 
 from tqdm import tqdm
 
-
+from pycocotools.coco import COCO
 # ============= Useful fuctions and classes from Haotian =============== #
 ######################### COOL STUFF: NEEDED!!!! #############################
 
@@ -36,7 +36,34 @@ def encode_tensor_as_string(arr):
         arr = arr.data.cpu().numpy()
     return base64.b64encode(arr.tobytes()).decode('utf-8')
 
+
+def tensor_to_base64(image_tensor):
+    """
+    Converts a PyTorch tensor to a base64 encoded image.
+    :param image_tensor: A PyTorch tensor of shape [C, H, W] with data range [0, 1].
+    :return: A base64 encoded string of the image.
+    """
+    # Assume the tensor is in the range [0, 1] and has shape [C, H, W]
+    # Convert it to PIL Image
+    image_tensor = image_tensor.detach()  # Detach tensor from any computation graph
+    image_tensor = image_tensor.mul(255).byte()  # Scale to [0, 255] and convert to byte
+    image_tensor = image_tensor.cpu().numpy()  # Move tensor to CPU and convert to numpy array
+    if image_tensor.shape[0] == 1:  # If grayscale
+        image_pil = Image.fromarray(image_tensor.squeeze(0), mode='L')
+    else:  # Assume RGB
+        # Convert tensor order from [C, H, W] to [H, W, C]
+        image_pil = Image.fromarray(image_tensor.transpose(1, 2, 0))
+
+    # Encode PIL image to base64
+    buffer = BytesIO()
+    image_pil.save(buffer, format="JPEG")
+    encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+    return encoded_string
+
 def item_to_encodable(item):
+    # print(item['image'].size)
+    # import pdb; pdb.set_trace()
     item['image'] = encode_pillow_to_base64(item['image'])
     
     for anno in item['annos']:
@@ -44,6 +71,13 @@ def item_to_encodable(item):
         anno['image_embedding_before'] = encode_tensor_as_string(anno['image_embedding_before'])
         anno['text_embedding_after'] = encode_tensor_as_string(anno['text_embedding_after'])
         anno['image_embedding_after'] = encode_tensor_as_string(anno['image_embedding_after'])
+        # print(anno['ref_mask'].shape)
+        # anno['ref_mask'] = tensor_to_base64(anno['ref_mask'][0])
+        # import pdb; pdb.set_trace()
+        anno['ref_mask'] = tensor_to_base64(anno['ref_mask'].unsqueeze(0))
+        anno['ref_img'] = tensor_to_base64(anno['ref_img'])
+        anno['ref_box'] = encode_tensor_as_string(anno['ref_box'])
+        
     return item
 
 
@@ -154,10 +188,11 @@ class GroundingDataset(Base):
         image = self.fetch_image(file_name)
         out["image"] = image
         out["file_name"] = file_name
-        
+        # import pdb; pdb.set_trace()
         out["caption"] = self.data[data_id]["caption"]
 
         annos = deepcopy(self.data_id_to_annos[data_id])
+        
         for anno in annos:
             anno["text_embedding_before"] = torch.load(os.path.join(self.annotation_embedding_path,"text_features_before",str(anno["id"])), map_location='cpu') 
 
@@ -166,6 +201,8 @@ class GroundingDataset(Base):
             anno["text_embedding_after"] = torch.load(os.path.join(self.annotation_embedding_path,"text_features_after",str(anno["id"])), map_location='cpu') 
             
             anno["image_embedding_after"] = torch.load(os.path.join(self.annotation_embedding_path,"image_features_after",str(anno["id"])), map_location='cpu') 
+            
+            
 
         out["annos"] = annos
 
@@ -175,8 +212,157 @@ class GroundingDataset(Base):
         return len(self.data_id_list)
 
 
+# class COCODataset(Base):
+#     "This is for grounding data such as GoldG, SBU, CC3M, LAION"
+#     def __init__(self, image_root, json_path, annotation_embedding_path):
+#         super().__init__(image_root)
+#         self.image_root = image_root
+#         self.json_path = json_path
+#         self.annotation_embedding_path = annotation_embedding_path
+
+#         # Load raw data 
+#         with open(json_path, 'r') as f:
+#             json_raw = json.load(f) # keys: 'info', 'images', 'licenses', 'categories', 'annotations'
+#         self.data = json_raw["images"] # donot name it images, which is misleading
+#         self.annotations = json_raw["annotations"]
+      
+#         # clean data and annotation
+#         check_unique( self.data, ['id'] )
+#         check_unique( self.annotations, ['id'] )
+#         clean_data(self.data)
+#         clean_annotations(self.annotations)
+#         self.data_id_list = [  datum['data_id'] for datum in self.data   ]
+#         self.data = { datum['data_id']:datum  for datum in self.data } # map self.data from a list into a dict 
+
+#         # data point to its annotation mapping 
+#         self.data_id_to_annos = defaultdict(list)
+#         for anno in self.annotations:
+#             self.data_id_to_annos[ anno["data_id"] ].append(anno)
+
+#     def getitem(self, index):
+
+#         out = {}
+
+#         data_id = self.data_id_list[index]
+#         out['data_id'] = data_id
+        
+#         file_name = self.data[data_id]['file_name']
+#         image = self.fetch_image(file_name)
+#         out["image"] = image
+#         out["file_name"] = file_name
+#         import pdb; pdb.set_trace()
+#         out["caption"] = self.data[data_id]["caption"]
+
+#         annos = deepcopy(self.data_id_to_annos[data_id])
+        
+#         for anno in annos:
+#             anno["text_embedding_before"] = torch.load(os.path.join(self.annotation_embedding_path,"text_features_before",str(anno["id"])), map_location='cpu') 
+
+#             anno["image_embedding_before"] = torch.load(os.path.join(self.annotation_embedding_path,"image_features_before",str(anno["id"])), map_location='cpu') 
+            
+#             anno["text_embedding_after"] = torch.load(os.path.join(self.annotation_embedding_path,"text_features_after",str(anno["id"])), map_location='cpu') 
+            
+#             anno["image_embedding_after"] = torch.load(os.path.join(self.annotation_embedding_path,"image_features_after",str(anno["id"])), map_location='cpu') 
+            
+#             # add ref mask:
+#             anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+
+#         out["annos"] = annos
+
+#         return out
+
+#     def __len__(self):
+#         return len(self.data_id_list)
+
+class COCODataset(Base):
+    "This only supports instance_json, thus only for O365"
+    def __init__(self, image_root, instances_json_path, annotation_embedding_path):
+        super().__init__(image_root)
+
+        self.image_root = image_root
+        self.instances_json_path = instances_json_path
+        self.annotation_embedding_path = annotation_embedding_path
+        self.captions_json_path = '/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/annotations/captions_val2017.json'
+        self.coco_caps = COCO(self.captions_json_path)
+        # Load all jsons 
+        with open(instances_json_path, 'r') as f:
+            instances_data = json.load(f) # keys: 'info', 'images', 'licenses', 'categories', 'annotations'
+        # self.annotations = instances_data["annotations"]
+        clean_annotations(instances_data["annotations"])
+        self.instances_data = instances_data
+
+        # Misc  
+        self.image_ids = [] # main list for selecting images
+        self.image_id_to_filename = {} # file names used to read image
+        for image_data in self.instances_data['images']:
+            image_id = image_data['id']
+            filename = image_data['file_name']
+            self.image_ids.append(image_id)
+            self.image_id_to_filename[image_id] = filename
+
+        
+        # All category names (including things and stuff)
+        self.object_idx_to_name = {} 
+        for category_data in self.instances_data['categories']:
+            self.object_idx_to_name[category_data['id']] = category_data['name']
 
 
+        # Add object data from instances and stuff 
+        self.image_id_to_objects = defaultdict(list)
+        for object_anno in self.instances_data['annotations']:
+            image_id = object_anno['data_id']
+            self.image_id_to_objects[image_id].append(object_anno)
+        
+
+    def getitem(self, index):
+
+        out = {}
+        out['is_det'] = False # indicating this is from detecton data format in TSV
+
+        image_id = self.image_ids[index]
+        out['data_id'] = image_id
+        import pdb; pdb.set_trace()
+        # Image 
+        file_name = self.image_id_to_filename[image_id]
+        image = self.fetch_image(file_name)
+        out["image"] = image
+        out["file_name"] = file_name
+    
+        # No caption, you need to create one using categories name on fly in TSV 
+        
+        # For COCO
+        # import pdb; pdb.set_trace()
+        annIds = self.coco_caps.getAnnIds(imgIds=image_id)
+        captions = self.coco_caps.loadAnns(annIds) #self.data[data_id]["caption"]
+        captions_text = [cap['caption'] for cap in captions]
+        out["caption"] = captions_text
+        
+        annos = deepcopy(self.image_id_to_objects[image_id])
+        for anno in annos:
+            anno['category_name'] = self.object_idx_to_name[ anno['category_id'] ]
+            
+            anno['text_embedding_before'] =  torch.load( os.path.join(self.annotation_embedding_path,"text_features_before",str(anno["id"])), map_location='cpu'  )
+            
+            anno['image_embedding_before'] = torch.load( os.path.join(self.annotation_embedding_path,"image_features_before",str(anno["id"])), map_location='cpu'  )
+
+            anno['text_embedding_after'] =  torch.load( os.path.join(self.annotation_embedding_path,"text_features_after",str(anno["id"])), map_location='cpu'  )
+
+            anno['image_embedding_after'] = torch.load( os.path.join(self.annotation_embedding_path,"image_features_after",str(anno["id"])), map_location='cpu'  )
+            
+            # add ref mask:
+            # import pdb; pdb.set_trace()
+            anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+            anno['ref_img'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_img",str(anno["id"])), map_location='cpu'  )
+            anno['ref_box'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_box",str(anno["id"])), map_location='cpu'  )
+            # print(anno['ref_mask'].shape)
+        out['annos'] = annos
+
+        return out 
+
+
+    def __len__(self):
+        return len(self.image_ids)
+	
 
 
 
@@ -234,8 +420,10 @@ class CDDataset(Base):
         out["file_name"] = file_name
     
         # No caption, you need to create one using categories name on fly in TSV 
-
-
+        
+        # For COCO
+        # out["caption"] = self.data[data_id]["caption"]
+        # import pdb; pdb.set_trace()
         annos = deepcopy(self.image_id_to_objects[image_id])
         for anno in annos:
             anno['category_name'] = self.object_idx_to_name[ anno['category_id'] ]
@@ -247,7 +435,12 @@ class CDDataset(Base):
             anno['text_embedding_after'] =  torch.load( os.path.join(self.annotation_embedding_path,"text_features_after",str(anno["id"])), map_location='cpu'  )
 
             anno['image_embedding_after'] = torch.load( os.path.join(self.annotation_embedding_path,"image_features_after",str(anno["id"])), map_location='cpu'  )
-
+            
+            # add ref mask:
+            # anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+            anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+            anno['ref_img'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_img",str(anno["id"])), map_location='cpu'  )
+            anno['ref_box'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_box",str(anno["id"])), map_location='cpu'  )
         out['annos'] = annos
 
         return out 
@@ -256,10 +449,6 @@ class CDDataset(Base):
     def __len__(self):
         return len(self.image_ids)
 	
-
-
-
-
 
 
 def split_chunks(lst, n):
@@ -281,7 +470,7 @@ if __name__ == "__main__":
     parser.add_argument("--annotation_embedding_path", type=str, help='offline processed feature embedding from process_grounding.py script')
     parser.add_argument("--tsv_path", type=str)
     args = parser.parse_args()
-    assert args.which_dataset in ["grounding", "detection"]
+    assert args.which_dataset in ["grounding", "detection","coco"]
 
     image_root = args.image_root
     json_path = args.json_path
@@ -314,13 +503,14 @@ if __name__ == "__main__":
     # annotation_embedding_path = "/nobackup2/yuheng-data/diffusion_few_shot/DATA/OBJECTS365/embedding_clip" # it must contain 'image_features' and 'text_features'
     # tsv_path = f"/nobackup3/yuheng-data/diffusion_few_shot/DATA/OBJECTS365/tsv/train-{args.chunk_idx:02d}.tsv"
 
-
-    if args.which_dataset == "grounding":
+    if args.which_dataset == "coco":
+        dataset = COCODataset(image_root,json_path, annotation_embedding_path)
+    elif args.which_dataset == "grounding":
         dataset = GroundingDataset(image_root,json_path, annotation_embedding_path)
     else:
         dataset = CDDataset(image_root,json_path, annotation_embedding_path)
 
-
+    # dataset.getitem(1)
     N = len(dataset)
     print(f'{N} items in total')
 
@@ -331,7 +521,9 @@ if __name__ == "__main__":
     writer = TSVWriter(tsv_path)
 
     for i in tqdm(indices):
+        # import pdb; pdb.set_trace()
         item = dataset[i]
+        # import pdb; pdb.set_trace()
         item = item_to_encodable(item)
         row = [item['data_id'], json.dumps(item)]
         writer.write(row)
