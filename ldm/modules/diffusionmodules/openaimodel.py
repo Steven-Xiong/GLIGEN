@@ -396,6 +396,7 @@ class UNetModel(nn.Module):
 
         self.position_net = instantiate_from_config(grounding_tokenizer) 
         
+        
 
     def restore_first_conv_from_SD(self):
         if self.first_conv_restorable:

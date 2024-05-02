@@ -121,12 +121,12 @@ class GroundedTextImageDataset_Detection(Base):
             chunk_size = math.ceil(len(self.annotations) / total_chunk)
             self.annotations = list( split_chunks(self.annotations,chunk_size) )[chunk_idx]
 
-    def __getitem__(self, index):
+    def getitem(self, index):
 
         anno = self.annotations[index]
         anno_id = anno["id"]
         X,Y,W,H = anno['bbox']
-
+        import pdb; pdb.set_trace()
         filename = self.image_id_to_filename[anno['image_id']]
         image = self.fetch_image(filename)
         image_crop = self.preprocess(  image.crop( (X,Y,X+W,Y+H) ).resize( (224,224), Image.BICUBIC )  )
@@ -219,7 +219,7 @@ def fire_clip_before_after(loader, folder):
 
         image_before_features = outputs.vision_model_output.pooler_output # before projection feature
         image_after_features = outputs.image_embeds # normalized after projection feature (CLIP aligned space)
-
+        import pdb; pdb.set_trace()
         for idx, text_before, text_after, image_before, image_after  in zip(batch["anno_id"], text_before_features, text_after_features, image_before_features, image_after_features):
             
             save_name = os.path.join(folder, 'text_features_before', str(int(idx)) )
@@ -274,9 +274,9 @@ if __name__ == "__main__":
     parser.add_argument("--only_after", type=bool, default=False, help='if false, then both before and after projection CLIP feature will be saved')
     parser.add_argument("--chunk_idx", type=int, default=None)
     parser.add_argument("--total_chunk", type=int, default=None)
-    parser.add_argument("--json_path", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/annotations/instances_train2017.json", help="")
-    parser.add_argument("--image_root", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/images/train2017/", help="")
-    parser.add_argument("--folder", type=str,  default="GROUNDING/coco_embeddings_train", help="")
+    parser.add_argument("--json_path", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/annotations/instances_val2017.json", help="")
+    parser.add_argument("--image_root", type=str,  default="/project/osprey/scratch/x.zhexiao/GLIGEN/data/coco/images/val2017/", help="")
+    parser.add_argument("--folder", type=str,  default="GROUNDING/coco_embeddings_try", help="")
     args = parser.parse_args()
 
 
@@ -288,7 +288,7 @@ if __name__ == "__main__":
         dataset = GroundedTextImageDataset_Detection(args.json_path, args.image_root, args.chunk_idx, args.total_chunk)
     else:
         dataset = GroundedTextImageDataset_Grounding(args.json_path, args.image_root, args.chunk_idx, args.total_chunk)
-    # dataset.getitem(2)
+    dataset.getitem(2)
     loader = DataLoader(dataset, batch_size=16, shuffle=False, num_workers=4, drop_last=False)
     os.makedirs(args.folder, exist_ok=True)
 

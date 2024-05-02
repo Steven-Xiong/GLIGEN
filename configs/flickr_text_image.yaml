@@ -53,7 +53,9 @@ autoencoder:
 
 text_encoder:
   target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
-
+image_encoder:
+  target: ldm.modules.encoders.modules.FrozenDinoV2Encoder
+  weight: gligen_checkpoints/dinov2_vitg14_pretrain.pth  #path/dinov2_vitg14_pretrain.pth
 
 
 # This is second stage training. (Resume base model from O365+GoldG) 
@@ -68,6 +70,8 @@ train_dataset_names:
     random_drop_embedding: both 
     random_crop: False
     random_flip: True
+    ref_zero: False
+    ref_mask: False
 
 
 grounding_tokenizer_input:

@@ -1,0 +1,49 @@
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@seas.wustl.edu>
+Subject: Job 837281: <anydoor> in cluster <SEAS-COMPUTE> Exited
+
+Job <anydoor> was submitted from host <osprey> by user <x.zhexiao> in cluster <SEAS-COMPUTE> at Fri Apr 26 16:55:40 2024
+Job was executed on host(s) <a100-2207.engr.wustl.edu>, in queue <gpu-compute>, as user <x.zhexiao> in cluster <SEAS-COMPUTE> at Fri Apr 26 16:55:49 2024
+</home/research/x.zhexiao> was used as the home directory.
+</project/osprey/scratch/x.zhexiao/GLIGEN> was used as the working directory.
+Started at Fri Apr 26 16:55:49 2024
+Terminated at Fri Apr 26 16:59:12 2024
+Results reported at Fri Apr 26 16:59:12 2024
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+# BSUB -o ./bjob_logs/train_4.26_textimage_COCO.%J
+
+# BSUB -q gpu-compute
+# BSUB -m "a100-2207.engr.wustl.edu" 
+
+# BSUB -gpu "num=2:mode=shared:gmodel=NVIDIAA10080GBPCIe" 
+# BSUB -J anydoor
+
+source ~/.bashrc
+conda activate instdiff
+cd /project/osprey/scratch/x.zhexiao/GLIGEN
+bash train.sh
+------------------------------------------------------------
+
+TERM_OWNER: job killed by owner.
+Exited with signal termination: 2.
+
+Resource usage summary:
+
+    CPU time :                                   0.06 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     -
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   90 sec.
+    Turnaround time :                            212 sec.
+
+The output (if any) is above this job summary.
+

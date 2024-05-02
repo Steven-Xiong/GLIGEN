@@ -10,19 +10,37 @@ class DatasetCatalog:
         self.VGGrounding = {   
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params": dict(
-                tsv_path=os.path.join(ROOT,'GROUNDING/gqa/tsv/train-00.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/VG_train_new/all.tsv'),
             ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/VG_test/train-0091.tsv'), #10有问题？
+            ),   # add test params
         }
 
+         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 
+
+        self.COCODetection = {   
+            "target": "dataset.tsv_dataset.TSVDataset",
+            "train_params": dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/coco_tsv_train/coco_train.tsv'),
+            ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/coco_tsv_val/coco_val.tsv'), #10有问题？
+            ),   # add test params
+        }
+        
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 
 
         self.FlickrGrounding = {
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params":dict(
-                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv/train-0000.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv_all_train/all.tsv'), #10有问题？
             ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv_test/train-0016.tsv'), #10有问题？
+            ),   # add test params
         }
 
 
@@ -31,10 +49,24 @@ class DatasetCatalog:
         self.SBUGrounding = {   
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params":dict(
-                tsv_path=os.path.join(ROOT,'GROUNDING/SBU/tsv/train-00.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/SBU_train/SBU_train.tsv'),
             ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/SBU_test/train-0068.tsv'), #10有问题？
+            ),   # add test params
          }
 
+        # # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+        # add a kind of combination
+        self.Flickr_VG_SBUGrounding = {
+            "target": "dataset.tsv_dataset.TSVDataset",
+            "train_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/flickr+vg+sbu_train/all.tsv'), #10有问题？
+            ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/flickr30k/tsv_test/train-0016.tsv'), #10有问题？
+            ),   # add test params
+        }
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - # 
 
@@ -42,8 +74,11 @@ class DatasetCatalog:
         self.CC3MGrounding = {   
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params":dict(
-                tsv_path=os.path.join(ROOT,'GROUNDING/CC3M/tsv/train-00.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/cc3m_train/all.tsv'),
             ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/cc3m_test/train-0482.tsv'), #10有问题？
+            ),   # add test params
         }
 
 
@@ -94,8 +129,11 @@ class DatasetCatalog:
         self.Obj365Detection = {   
             "target": "dataset.tsv_dataset.TSVDataset",
             "train_params":dict(
-                tsv_path=os.path.join(ROOT,'OBJECTS365/tsv/train-00.tsv'),
+                tsv_path=os.path.join(ROOT,'GROUNDING/o365_train/all.lineidx'),
             ),
+            "val_params":dict(
+                tsv_path=os.path.join(ROOT,'GROUNDING/o365_test/train-0620.tsv'), #10有问题？
+            ),   # add test params
         }
 
 
@@ -133,8 +171,3 @@ class DatasetCatalog:
                 caption_path = os.path.join(ROOT,'ADE/ade_train_images_cation.json'),
             ),
         }
-
-
-
-
-

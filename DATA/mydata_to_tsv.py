@@ -56,7 +56,7 @@ def tensor_to_base64(image_tensor):
 
     # Encode PIL image to base64
     buffer = BytesIO()
-    image_pil.save(buffer, format="JPEG")
+    image_pil.save(buffer, format="PNG")
     encoded_string = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
     return encoded_string
@@ -438,7 +438,16 @@ class CDDataset(Base):
             
             # add ref mask:
             # anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+            # import pdb; pdb.set_trace()
             anno['ref_mask'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_mask",str(anno["id"])), map_location='cpu'  )
+            # anno['ref_mask'] = anno['ref_mask'].float()
+            # import matplotlib.pyplot as plt
+            # fig, ax = plt.subplots()
+            # plt.imshow(anno['ref_mask'].int().squeeze(0), cmap='gray')  # 使用灰度颜色映射
+            # plt.colorbar()
+            # # ax.axis('off')
+            # plt.savefig('mask_427.png',dpi=100,bbox_inches='tight', pad_inches=0)
+            
             anno['ref_img'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_img",str(anno["id"])), map_location='cpu'  )
             anno['ref_box'] = torch.load( os.path.join(self.annotation_embedding_path,"ref_box",str(anno["id"])), map_location='cpu'  )
         out['annos'] = annos

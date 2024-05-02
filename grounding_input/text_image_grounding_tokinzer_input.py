@@ -41,7 +41,6 @@ class GroundingNetInput:
         Guidance for training (drop) or inference, 
         please define the null input for the grounding tokenizer 
         """
-
         assert self.set, "not set yet, cannot call this funcion"
         batch =  self.batch  if batch  is None else batch
         device = self.device if device is None else device

@@ -37,14 +37,17 @@ class ImageCaptionSaver:
         self.scale_each = scale_each
         self.range = range
 
-    def __call__(self, images, real, masked_real, captions, seen):
-        
+    def __call__(self, images, real, masked_real, ref,  captions, seen):
+        # import pdb; pdb.set_trace()  # images.shape/real.shape: [B,3,512,512]
         save_path = os.path.join(self.base_path, str(seen).zfill(8)+'.png')
         torchvision.utils.save_image( images, save_path, nrow=self.nrow, normalize=self.normalize, scale_each=self.scale_each, range=self.range )
         
         save_path = os.path.join(self.base_path, str(seen).zfill(8)+'_real.png')
         torchvision.utils.save_image( real, save_path, nrow=self.nrow)
-
+        
+        save_path = os.path.join(self.base_path, str(seen).zfill(8)+'_ref.png')
+        torchvision.utils.save_image( ref, save_path, nrow=self.nrow)
+        
         if masked_real is not None:
             # only inpaiting mode case 
             save_path = os.path.join(self.base_path, str(seen).zfill(8)+'_mased_real.png')
@@ -165,7 +168,7 @@ def create_expt_folder_with_auto_resuming(OUTPUT_ROOT, name):
 
 class Trainer:
     def __init__(self, config):
-
+        # import pdb; pdb.set_trace()
         self.config = config
         self.device = torch.device("cuda")
 
@@ -182,6 +185,8 @@ class Trainer:
         self.autoencoder = instantiate_from_config(config.autoencoder).to(self.device)
         self.text_encoder = instantiate_from_config(config.text_encoder).to(self.device)
         self.diffusion = instantiate_from_config(config.diffusion).to(self.device)
+        # add image encoderr:
+        self.image_encoder = instantiate_from_config(config.image_encoder).to(self.device)
 
         # import pdb; pdb.set_trace()
         state_dict = read_official_ckpt(  os.path.join(config.DATA_ROOT, config.official_ckpt_name)   )
@@ -206,10 +211,10 @@ class Trainer:
         self.text_encoder.eval()
         disable_grads(self.autoencoder)
         disable_grads(self.text_encoder)
-
+        # import pdb; pdb.set_trace()
         # = = = = = = = = = = = = = load from ckpt: (usually for inpainting training) = = = = = = = = = = = = = #
         if self.config.ckpt is not None:
-            first_stage_ckpt = torch.load(self.config.ckpt, map_location="cpu")
+            first_stage_ckpt = torch.load(self.config.ckpt, map_location="cpu")  # '/project/osprey/scratch/x.zhexiao/GLIGEN/gligen_checkpoints/checkpoint_generation_text_image.bin'
             self.model.load_state_dict(first_stage_ckpt["model"])
 
 
@@ -269,7 +274,7 @@ class Trainer:
 
 
 
-
+        # 要改dataloader在这里改
         # = = = = = = = = = = = = = = = = = = = = create data = = = = = = = = = = = = = = = = = = = = #  
         train_dataset_repeats = config.train_dataset_repeats if 'train_dataset_repeats' in config else None
         dataset_train = ConCatDataset(config.train_dataset_names, config.DATA_ROOT, train=True, repeats=train_dataset_repeats)
@@ -277,7 +282,7 @@ class Trainer:
         # import pdb; pdb.set_trace()
         sampler = DistributedSampler(dataset_train, seed=config.seed) if config.distributed else None 
         loader_train = DataLoader( dataset_train,  batch_size=config.batch_size, 
-                                                   shuffle=(sampler is None),
+                                                   shuffle= (sampler is None),
                                                    num_workers=config.workers, 
                                                    pin_memory=True, 
                                                    sampler=sampler)
@@ -310,6 +315,7 @@ class Trainer:
         # = = = = = = = = = = = = = = = = = = = = misc and ddp = = = = = = = = = = = = = = = = = = = =#    
         
         # func return input for grounding tokenizer 
+        # import pdb; pdb.set_trace()
         self.grounding_tokenizer_input = instantiate_from_config(config.grounding_tokenizer_input)
         self.model.grounding_tokenizer_input = self.grounding_tokenizer_input
         
@@ -322,8 +328,8 @@ class Trainer:
             self.image_caption_saver = ImageCaptionSaver(self.name)
 
         if config.distributed:
-            self.model = DDP( self.model, device_ids=[config.local_rank], output_device=config.local_rank, broadcast_buffers=False )
-
+            self.model = DDP( self.model, device_ids=[config.local_rank], output_device=config.local_rank, broadcast_buffers=False, find_unused_parameters=True ) # True会报错
+            self.model._set_static_graph()
 
 
 
@@ -332,8 +338,11 @@ class Trainer:
     def get_input(self, batch):     #这里比较关键
         # import pdb; pdb.set_trace()
         z = self.autoencoder.encode( batch["image"] )
+        # ref = self.autoencoder.encode(batch["ref"])
 
         context = self.text_encoder.encode( batch["caption"]  )
+        ref_image_emb = self.image_encoder.encode( batch["ref"]  )  #做reshape就行,projection处1024改768
+        context = torch.cat((context, ref_image_emb),dim=1)
 
         _t = torch.rand(z.shape[0]).to(z.device)
         t = (torch.pow(_t, 1) * 1000).long()  # e.p: [306, 547]
@@ -379,7 +388,8 @@ class Trainer:
 
         iterator = tqdm(range(self.starting_iter, self.config.total_iters), desc='Training progress',  disable=get_rank() != 0 )
         self.model.train()
-        for iter_idx in iterator: # note: iter_idx is not from 0 if resume training
+        # import pdb; pdb.set_trace()
+        for iter_idx in iterator: # note: iter_idx is not from 0 if resume training  20001起始
             self.iter_idx = iter_idx
 
             self.opt.zero_grad()
@@ -393,11 +403,11 @@ class Trainer:
             if self.config.enable_ema:
                 update_ema(self.ema_params, self.master_params, self.config.ema_rate)
 
-
+            # import pdb; pdb.set_trace()
             if (get_rank() == 0):
                 if (iter_idx % 10 == 0):
                     self.log_loss() 
-                if (iter_idx == 0)  or  ( iter_idx % self.config.save_every_iters == 0 )  or  (iter_idx == self.config.total_iters-1):
+                if (iter_idx == 0)  or  ( iter_idx % self.config.save_every_iters == 0 )  or  (iter_idx == self.config.total_iters-1) or (iter_idx == 20001):
                     self.save_ckpt_and_result()
             synchronize()
 
@@ -437,9 +447,13 @@ class Trainer:
                 # keypoint case 
                 real_images_with_box_drawing = batch["image"]*0.5 + 0.5 
                 
-            
+            # TODO: 在这里加dino encoder
             uc = self.text_encoder.encode( batch_here*[""] )
+            uc_image = self.image_encoder(batch_here*[ torch.zeros((1,3,224,224)) ])
+            uc = torch.cat((uc,uc_image), dim=1)
             context = self.text_encoder.encode(  batch["caption"]  )
+            ref_image_emb = self.image_encoder.encode( batch["ref"]  )  #做reshape就行,projection处1024改768
+            context = torch.cat((context, ref_image_emb),dim=1)
             
             plms_sampler = PLMSSampler(self.diffusion, model_wo_wrapper)      
             shape = (batch_here, model_wo_wrapper.in_channels, model_wo_wrapper.image_size, model_wo_wrapper.image_size)
@@ -470,10 +484,11 @@ class Trainer:
             samples = torch.clamp(samples, min=-1, max=1)
 
             masked_real_image =  batch["image"]*torch.nn.functional.interpolate(inpainting_mask, size=(512, 512)) if self.config.inpaint_mode else None
-            self.image_caption_saver(samples, real_images_with_box_drawing,  masked_real_image, batch["caption"], iter_name)
+            self.image_caption_saver(samples, real_images_with_box_drawing,  masked_real_image, batch['ref'], batch["caption"], iter_name)
 
         ckpt = dict(model = model_wo_wrapper.state_dict(),
                     text_encoder = self.text_encoder.state_dict(),
+                    image_encoder = self.image_encoder.state_dict(),
                     autoencoder = self.autoencoder.state_dict(),
                     diffusion = self.diffusion.state_dict(),
                     opt = self.opt.state_dict(),

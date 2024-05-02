@@ -93,3 +93,4 @@ pretrained
 color150.mat
 SD_input_conv_weight_bias.pth
 projection_matrix
+OUTPUT_test
